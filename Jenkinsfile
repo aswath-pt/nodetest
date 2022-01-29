@@ -10,6 +10,33 @@ pipeline {
                 sh 'npm install'
             }
         }
+        
+        stage('Code scan Sonarqube') {
+        steps {
+          script {
+       def scannerHome = tool 'sonar-tool';
+       withSonarQubeEnv("sonar-server") {
+       sh """${tool("sonar-tool")}/bin/sonar-scanner \
+       -Dsonar.projectKey=project \
+       -Dsonar.sources=. \
+       -Dsonar.projectName=project"""
+           }
+       } 
+    }
+         }
+         
+         stage("Quality gate") {
+      steps {
+        script {
+          def qualitygate = waitForQualityGate()
+          sleep(10)
+          if (qualitygate.status != "OK") {
+            waitForQualityGate abortPipeline: true
+          }
+        }
+      }
+    }
+        
         stage('Test') {
                     steps {
                         sh './jenkins/scripts/test.sh'
